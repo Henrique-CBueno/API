@@ -1,5 +1,5 @@
 from agno.agent import Agent
-from agno.models.groq import Groq
+from agno.models.openai import OpenAIChat
 from fastapi import Depends, HTTPException
 from controllers.auth import getCurrentUser
 from connection import prismaConnection
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Definição do modelo
-model = Groq(id="openai/gpt-oss-120b")
+model = OpenAIChat(id="gpt-4o-mini")
 
 # Criação do agente
 flashcard_agent = Agent(
