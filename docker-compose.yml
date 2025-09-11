@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: bitnami/postgresql:latest
+    environment:
+      POSTGRES_DB: polls
+      POSTGRES_USER: docker
+      POSTGRES_PASSWORD: docker
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - polls_pg_data:/bitnami/postgresql
+
+  redis:
+    image: bitnami/redis:latest
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - '127.0.0.1:6379:6379'
+    volumes:
+      - 'polls_redis_data:/bitnami/redis/data'
+
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app.py:/app/app.py
+      - ./connection.py:/app/connection.py
+      - ./controllers:/app/controllers
+      - ./database:/app/database
+      - ./schema.prisma:/app/schema.prisma
+      - ./pyproject.toml:/app/pyproject.toml
+      # Volumes de cache para modelos
+    env_file:
+      - ./.env
+    depends_on:
+      - postgres
+      - redis
+
+  # ngrok:
+  #   image: ngrok/ngrok:latest
+  #   restart: unless-stopped
+  #   depends_on:
+  #     - app # Garante que o ngrok só inicie depois que o serviço 'app' estiver pronto
+  #   environment:
+  #     # Passa o authtoken do seu arquivo .env para o container
+  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN} 
+  #   command: 
+  #     # Comando para criar o túnel:
+  #     # "http" -> protocolo
+  #     # "app" -> NOME DO SERVIÇO da sua aplicação no Docker Compose
+  #     # "8000" -> PORTA INTERNA em que sua aplicação está rodando
+  #     - "http"
+  #     - "app:8000" # 1. ONDE a sua aplicação está rodando (serviço:porta)
+  #     - "--domain=mutagenetic-uninstinctively-miles.ngrok-free.app"
+  #   ports:
+  #     - "4040:4040"
+
+volumes:
+  polls_pg_data:
+  polls_redis_data:

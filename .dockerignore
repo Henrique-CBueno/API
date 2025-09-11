@@ -1,0 +1,15 @@
+# .dockerignore
+
+# Ignorar ambiente virtual e caches
+.venv
+__pycache__/
+*.pyc
+
+# Ignorar configurações de IDE e Git
+.git
+.vscode
+.idea
+
+# Ignorar arquivos de lock e outros gerados localmente
+uv.lock
+.env

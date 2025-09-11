@@ -1,0 +1,63 @@
+generator client {
+    provider = "prisma-client-py"
+    recursive_type_depth = 5
+}
+
+
+datasource db {
+    provider = "postgresql"
+    url = env("DATABASE_URL")
+}
+
+model User {
+  id         Int         @id @default(autoincrement())
+  email      String      @unique
+  password   String
+  tokens     Int         @default(1)
+  createdAt  DateTime    @default(now())   // sempre UTC
+  pdfs       PDF[]       // adicionei o inverso para clareza
+  payments  Payment[]
+}
+
+model PDF {
+  id             Int         @id @default(autoincrement())
+  name           String
+  userId         Int
+  extracted_text String
+  createdAt      DateTime    @default(now())   // sempre UTC
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashcards Flashcard[]
+}
+
+model Flashcard {
+  id     Int    @id @default(autoincrement())
+  pdfId  Int
+  front  String
+  back   String
+
+  pdf PDF @relation(fields: [pdfId], references: [id], onDelete: Cascade)
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Float     // preço do pacote
+  tokens    Int       // quantidade de tokens
+  createdAt DateTime  @default(now())
+  payments  Payment[]
+}
+
+model Payment {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  productId   Int
+  mpPaymentId String?
+  tokensAdd   Boolean   @default(false)
+  amount      Float
+  status      String    @default("pending") // pending | approved | failed
+  createdAt   DateTime  @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
