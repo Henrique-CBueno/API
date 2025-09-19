@@ -4,60 +4,65 @@ services:
   postgres:
     image: bitnami/postgresql:latest
     environment:
-      POSTGRES_DB: polls
-      POSTGRES_USER: docker
-      POSTGRES_PASSWORD: docker
-    ports:
-      - "127.0.0.1:5432:5432"
+      POSTGRES_DB: ${POSTGRES_DB:-polls}
+      POSTGRES_USER: ${POSTGRES_USER:-docker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-docker}
     volumes:
       - polls_pg_data:/bitnami/postgresql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-docker}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
 
   redis:
     image: bitnami/redis:latest
     environment:
-      - ALLOW_EMPTY_PASSWORD=yes
-    ports:
-      - '127.0.0.1:6379:6379'
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - ALLOW_EMPTY_PASSWORD=no
     volumes:
       - 'polls_redis_data:/bitnami/redis/data'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend
 
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: dockerfile
     ports:
-      - "8000:8000"
-    volumes:
-      - ./app.py:/app/app.py
-      - ./connection.py:/app/connection.py
-      - ./controllers:/app/controllers
-      - ./database:/app/database
-      - ./schema.prisma:/app/schema.prisma
-      - ./pyproject.toml:/app/pyproject.toml
-      # Volumes de cache para modelos
+      - "${PORT:-8000}:8000"
     env_file:
       - ./.env
+    restart: unless-stopped
+    command: sh -c "uv prisma db push && uvicorn app:app --host 0.0.0.0 --port 8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
 
-  # ngrok:
-  #   image: ngrok/ngrok:latest
-  #   restart: unless-stopped
-  #   depends_on:
-  #     - app # Garante que o ngrok só inicie depois que o serviço 'app' estiver pronto
-  #   environment:
-  #     # Passa o authtoken do seu arquivo .env para o container
-  #     - NGROK_AUTHTOKEN=${NGROK_AUTHTOKEN} 
-  #   command: 
-  #     # Comando para criar o túnel:
-  #     # "http" -> protocolo
-  #     # "app" -> NOME DO SERVIÇO da sua aplicação no Docker Compose
-  #     # "8000" -> PORTA INTERNA em que sua aplicação está rodando
-  #     - "http"
-  #     - "app:8000" # 1. ONDE a sua aplicação está rodando (serviço:porta)
-  #     - "--domain=mutagenetic-uninstinctively-miles.ngrok-free.app"
-  #   ports:
-  #     - "4040:4040"
+networks:
+  backend:
+    driver: bridge
 
 volumes:
   polls_pg_data:
+    driver: local
   polls_redis_data:
+    driver: local

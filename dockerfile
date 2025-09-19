@@ -1,31 +1,66 @@
-# Dockerfile (CORREÇÃO FINAL)
+# Estágio de build
+FROM python:3.12-slim as builder
 
-# Passo 1: Imagem base
-FROM python:3.12-slim
+# Definir variáveis de ambiente para o build
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Passo 2: Definir o diretório de trabalho
+# Definir o diretório de trabalho
 WORKDIR /app
 
-# Passo 3: Instalar o 'uv'
-RUN pip install uv
+# Instalar ferramentas essenciais e uv
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install uv
 
-# Passo 4: Copiar o arquivo de dependências
+# Copiar arquivos de dependências
 COPY pyproject.toml .
 
-# Passo 5: Instalar TODAS as dependências do projeto
+# Instalar dependências
 RUN uv pip install --system --no-cache .
 
-# Passo 6: Agora que o Prisma está instalado, copie o schema
+# Copiar schema do Prisma e gerar cliente
 COPY database/schema.prisma ./database/
-
-# Passo 7: Execute o comando generate usando o módulo Python (mais robusto)
 RUN python -m prisma generate --schema=./database/schema.prisma
 
-# Passo 8: Copiar todo o código da aplicação
+# Estágio final
+FROM python:3.12-slim
+
+# Definir variáveis de ambiente para produção
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8000
+
+# Criar usuário não-root
+RUN useradd -m -u 1000 appuser && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copiar dependências e arquivos do estágio de build
+COPY --from=builder /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
+COPY --from=builder /app/database/schema.prisma ./database/schema.prisma
+
+# Copiar código da aplicação
 COPY . .
 
-# Passo 9: Expor a porta
-EXPOSE 8000
+# Definir permissões corretas
+RUN chown -R appuser:appuser /app
+USER appuser
 
-# Passo 10: Comando para iniciar o contêiner usando o módulo Python
-CMD ["sh", "-c", "python -m prisma db push --schema=./database/schema.prisma && uvicorn app:app --host 0.0.0.0 --port 8000 --reload"]
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/health || exit 1
+
+# Expor porta
+EXPOSE ${PORT}
+
+# Comando para iniciar a aplicação
+CMD ["sh", "-c", "python -m prisma db push --schema=./database/schema.prisma && uvicorn app:app --host 0.0.0.0 --port=${PORT} --workers=4"]
