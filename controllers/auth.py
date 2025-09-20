@@ -109,6 +109,7 @@ async def getCurrentUser(token: Annotated[str, Depends(oauth2_bearer)]):
             'id': user_with_pdfs_and_flashcards.id,
             'email': user_with_pdfs_and_flashcards.email,
             'tokens': user_with_pdfs_and_flashcards.tokens,
+            'role': user_with_pdfs_and_flashcards.role,
             'pdfs': [
                 {
                     'id': pdf.id,

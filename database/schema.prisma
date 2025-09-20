@@ -14,6 +14,8 @@ model User {
   email      String      @unique
   password   String
   tokens     Int         @default(1)
+  role       String      @default("user") // user | admin
+  is_verified Boolean    @default(false)  // verificação por OTP
   createdAt  DateTime    @default(now())   // sempre UTC
   pdfs       PDF[]       // adicionei o inverso para clareza
   payments  Payment[]
