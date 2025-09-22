@@ -1,4 +1,3 @@
-
 # Passo 1: Imagem base
 FROM python:3.12-slim
 
@@ -17,17 +16,18 @@ COPY pyproject.toml .
 # Passo 5: Instalar TODAS as dependências do projeto
 RUN pip install --no-cache-dir .
 
-# Passo 6: Agora que o Prisma está instalado, copie o schema
+# Passo 6: Copiar o schema do Prisma
 COPY database/schema.prisma ./database/
 
-# Passo 7: Execute o comando generate usando o módulo Python
+# Passo 7: Gerar cliente Prisma
 RUN python -m prisma generate --schema=./database/schema.prisma
 
 # Passo 8: Copiar todo o código da aplicação
 COPY . .
 
-# Passo 9: Expor a porta
-EXPOSE 8000
 
-# Passo 10: Comando para iniciar o contêiner
-CMD ["sh", "-c", "python -m prisma db push --schema=./database/schema.prisma && uvicorn app:app --host 0.0.0.0 --port 8000 --reload"]
+# Passo 9: Rodar DB push + seed antes de iniciar a aplicação
+CMD python -m prisma db push --schema=./database/schema.prisma && \
+    python ./database/seeds/product_seeds.py && \
+    python ./database/seeds/seed.py && \
+    uvicorn app:app --host 0.0.0.0 --port 8000 --reload

@@ -66,13 +66,11 @@ async def processFlashcards(text: str, current_user: dict = Depends(getCurrentUs
     raw_content = response.content
     flashcards = json.loads(raw_content)
     
-    # Remover 1 token do usuário
-    await prismaConnection.prisma.user.update(
-        where={'id': user_id},
-        data={'tokens': user.tokens - 1},
-    )
     
-    return flashcards
+    # Retornar flashcards e tokens atualizados
+    return {
+        "flashcards": flashcards
+    }
 
 
 

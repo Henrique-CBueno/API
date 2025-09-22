@@ -51,7 +51,8 @@ async def criar_pagamento(product_id: int, user: dict = Depends(getCurrentUser))
         #     "pending": "http://localhost:5173/pagamento/pendente",
         # },
         # "auto_return": "approved",
-        # "notification_url": "https://mutagenetic-uninstinctively-miles.ngrok-free.app/webhook"
+        # ATENÇÃO: A URL do ngrok é temporária. Substitua por uma URL de produção estável.
+        "notification_url": "https://mutagenetic-uninstinctively-miles.ngrok-free.app/webhook/mercadopago"
     }
 
     preference_response = sdk.preference().create(preference_data)

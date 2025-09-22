@@ -26,6 +26,7 @@ model PDF {
   name           String
   userId         Int
   extracted_text String
+  status         String  @default("processing")
   createdAt      DateTime    @default(now())   // sempre UTC
 
   user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)

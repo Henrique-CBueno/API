@@ -26,6 +26,7 @@ async def getUsers(current_user: dict = Depends(getCurrentUser)):
             "tokens": u.tokens,
             "createdAt": u.createdAt,
             "pdfsUploaded": len(u.pdfs) if u.pdfs else 0,
+            "is_verified": u.is_verified,
         }
         for u in users
     ]

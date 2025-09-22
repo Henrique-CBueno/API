@@ -6,7 +6,7 @@ import os
 import uvicorn
 
 from connection import prismaConnection
-from controllers import auth, flashcard, payments, admin, otp
+from controllers import auth, flashcard, payments, admin
 from controllers.auth import getCurrentUser
 
 
@@ -21,7 +21,6 @@ app.include_router(auth.router)
 app.include_router(flashcard.router)
 app.include_router(payments.router)
 app.include_router(admin.router)
-app.include_router(otp.router)
 
 origins = os.getenv("BACKEND_CORS_ORIGINS")
 

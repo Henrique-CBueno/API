@@ -31,6 +31,7 @@ services:
       timeout: 5s
       retries: 5
 
+
   app:
     build: .
     ports:
@@ -51,6 +52,18 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+  worker:
+    build: .
+    working_dir: /app  # <-- O diretório de trabalho é a raiz do app
+    command: python -m workers.pdf_worker
+    
+    environment:
+      - PYTHONPATH=/app  # <-- O Python deve procurar módulos a partir da raiz
+    volumes:
+      - .:/app          # <-- Mapeia o diretório atual (API) para /app
+    depends_on:
+      - redis
+      - app
 
 volumes:
   polls_pg_data:
